@@ -45,6 +45,7 @@
             <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="resize">尺寸调整</div>
             <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="watermark">图片水印</div>
             <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="compress">图片压缩</div>
+            <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="jiaocheng">图片教程</div>
         </div>
     </header>
 
@@ -240,13 +241,33 @@
                 </div>
             </div>
         </section>
+
+
+
+<!--6.教程模块 -->
+        <section class="tab-content" id="jiaocheng">
+          <h3 class="font-semibold text-lg mb-4">怎么把图片压缩到200KB以下</h3> 
+         <p>‌图片压缩到 200kb 以下很简单，电脑和手机都有免费方法，无需专门学技术。‌ 最推荐用在线工具或系统自带功能，几分钟就能搞定，还能尽量保住画质。PS大家应该都知道，用它压缩图片也是比较简单的，在PS中打开需要压缩的图片，在菜单栏点击【文件】，然后点击【储存为...】。就会弹出储存图片文件，注意保存格式一定要选择JPG，然后设置保存文件名之后，就会弹出一个JPEG选项窗口，品质选择低，前面的数字的话越小图片文件就越小，调整到你想要的大小之后，点击【确定】就压缩好了。</p>
+    <h3 class="font-semibold text-lg mb-4">JPG和PNG有什么区别</h3>  
+<p>‌压缩方式不同‌
+‌JPG‌：采用有损压缩，会丢弃部分细节来减小体积，多次保存画质会下降 。
+‌PNG‌：采用无损压缩，保留所有图像数据，反复编辑保存画质不变 。‌‌‌
+‌透明度支持不同‌
+‌JPG‌：不支持透明背景，透明区域会变成白色或黑色 。
+‌PNG‌：支持透明背景（Alpha 通道），适合叠加在不同背景上 。‌‌‌
+‌文件大小不同‌
+‌JPG‌：体积小，加载快，适合网络传输 。
+‌PNG‌：体积通常较大，可能是 JPG 的 2-10 倍，但简单图形除外。</p>
+        </section>
     </main>
 
     <!-- 预留广告位 -->
     <div id="ad-container" class="mt-10" style="height:90px;background:#f8f8f8;display:flex;align-items:center;justify-content:center;color:#999;">
-        广告位预留，后续接入广告代码
+     <!--   广告位预留，后续接入广告代码-->
     </div>
-
+<p align="center" style="color:#999">关于我：我是个人开发者，工具免费开放给用户使用。<br >
+隐私政策： 图片处理都在本地完成不收集隐私更好，Google 使用 Cookie 进行个性化广告投放。<br >
+联系方式：yangguang3004@gmail.com</p>
     <script>
         // 全局变量
         let sourceFile = null, sourceBlob = null;
@@ -446,4 +467,3 @@
     </script>
 </body>
 </html>
-
