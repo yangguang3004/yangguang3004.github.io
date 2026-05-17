@@ -1,1 +1,449 @@
-你好
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片处理百宝箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        neutral: '#f3f4f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        .tab-item.active { @apply border-b-2 border-primary text-primary font-medium; }
+        .upload-box { border: 2px dashed #cbd5e1; transition: all 0.3s; }
+        .upload-box:hover { border-color: #2563eb; background: #f0f7ff; }
+        .preview-canvas { max-width: 100%; height: auto; }
+        /* 裁切选区样式 */
+        .crop-mask { position: absolute; top:0; left:0; background: rgba(0,0,0,0.5); pointer-events: none; }
+        .crop-box { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); cursor: move; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 顶部标题栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-4 text-center">
+            <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800">
+                <i class="fa-solid fa-image mr-2 text-primary"></i>图片处理百宝箱
+            </h1>
+            <p class="text-gray-500 text-sm mt-1">纯前端本地处理 · 不上传服务器 · 保护隐私</p>
+        </div>
+        <!-- 功能标签栏 -->
+        <div class="flex overflow-x-auto bg-white px-2 border-b">
+            <div class="tab-item active py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="convert">格式转换</div>
+            <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="crop">图片裁切</div>
+            <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="resize">尺寸调整</div>
+            <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="watermark">图片水印</div>
+            <div class="tab-item py-3 px-4 whitespace-nowrap cursor-pointer" data-tab="compress">图片压缩</div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- 通用隐藏原图容器 -->
+        <input type="file" id="file-input" class="hidden" accept="image/*">
+        <img id="source-img" class="hidden">
+        <canvas id="main-canvas" class="hidden"></canvas>
+        <canvas id="crop-canvas" class="hidden"></canvas>
+
+        <!-- 1.格式转换模块 -->
+        <section class="tab-content" id="convert">
+            <div class="grid md:grid-cols-2 grid-cols-1 gap-6">
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">上传图片 & 设置参数</h3>
+                    <div class="upload-box rounded-lg p-8 text-center cursor-pointer mb-4" id="convert-upload">
+                        <i class="fa-solid fa-cloud-upload text-4xl text-gray-400"></i>
+                        <p class="mt-2 text-gray-500">点击/拖拽上传图片</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-600 mb-2">选择输出格式</label>
+                        <select id="convert-type" class="w-full border rounded px-3 py-2">
+                            <option value="image/jpeg">JPG</option>
+                            <option value="image/png">PNG</option>
+                            <option value="image/webp">WebP</option>
+                        </select>
+                    </div>
+                    <button class="w-full bg-primary text-white py-2 rounded hover:bg-blue-700" onclick="handleConvert()">开始转换</button>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">预览效果</h3>
+                    <div class="min-h-[300px] flex items-center justify-center border rounded p-3" id="convert-preview">
+                        <p class="text-gray-400">暂无图片预览</p>
+                    </div>
+                    <a id="convert-download" class="hidden block w-full text-center mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600">下载图片</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.图片裁切模块 -->
+        <section class="tab-content hidden" id="crop">
+            <div class="grid md:grid-cols-2 grid-cols-1 gap-6">
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">上传图片 & 裁切设置</h3>
+                    <div class="upload-box rounded-lg p-8 text-center cursor-pointer mb-4" id="crop-upload">
+                        <i class="fa-solid fa-cloud-upload text-4xl text-gray-400"></i>
+                        <p class="mt-2 text-gray-500">点击/拖拽上传图片</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm text-gray-600 mb-2">裁切比例</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="crop-ratio px-3 py-1 border rounded text-sm" data-ratio="0">自由裁切</button>
+                            <button class="crop-ratio px-3 py-1 border rounded text-sm" data-ratio="1">1:1</button>
+                            <button class="crop-ratio px-3 py-1 border rounded text-sm" data-ratio="16/9">16:9</button>
+                            <button class="crop-ratio px-3 py-1 border rounded text-sm" data-ratio="9/16">9:16</button>
+                            <button class="crop-ratio px-3 py-1 border rounded text-sm" data-ratio="4/3">4:3</button>
+                            <button class="crop-ratio px-3 py-1 border rounded text-sm" data-ratio="3/4">3:4</button>
+                        </div>
+                    </div>
+                    <button class="w-full bg-primary text-white py-2 rounded hover:bg-blue-700" onclick="handleCrop()">确认裁切</button>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow relative overflow-hidden">
+                    <h3 class="font-semibold text-lg mb-4">拖拽选区裁切预览</h3>
+                    <div class="min-h-[300px] flex items-center justify-center border rounded p-3 relative" id="crop-preview-box">
+                        <p class="text-gray-400">上传图片后在此选区裁切</p>
+                        <div id="crop-wrap" class="relative hidden"></div>
+                    </div>
+                    <a id="crop-download" class="hidden block w-full text-center mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600">下载裁切图</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3.尺寸调整模块 -->
+        <section class="tab-content hidden" id="resize">
+            <div class="grid md:grid-cols-2 grid-cols-1 gap-6">
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">上传图片 & 尺寸设置</h3>
+                    <div class="upload-box rounded-lg p-8 text-center cursor-pointer mb-4" id="resize-upload">
+                        <i class="fa-solid fa-cloud-upload text-4xl text-gray-400"></i>
+                        <p class="mt-2 text-gray-500">点击/拖拽上传图片</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-sm text-gray-600">宽度(px)</label>
+                            <input type="number" id="resize-w" class="w-full border rounded px-2 py-1 mt-1" placeholder="自动">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600">高度(px)</label>
+                            <input type="number" id="resize-h" class="w-full border rounded px-2 py-1 mt-1" placeholder="自动">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-sm text-gray-600">缩放百分比</label>
+                        <input type="range" id="resize-scale" min="10" max="200" value="100" class="w-full">
+                        <span id="scale-text">100%</span>
+                    </div>
+                    <label class="flex items-center gap-2 mb-3">
+                        <input type="checkbox" id="lock-ratio" checked> 锁定等比缩放
+                    </label>
+                    <button class="w-full bg-primary text-white py-2 rounded hover:bg-blue-700" onclick="handleResize()">调整尺寸</button>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">调整后预览</h3>
+                    <div class="min-h-[300px] flex items-center justify-center border rounded p-3" id="resize-preview">
+                        <p class="text-gray-400">暂无图片预览</p>
+                    </div>
+                    <a id="resize-download" class="hidden block w-full text-center mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600">下载图片</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4.图片水印模块 -->
+        <section class="tab-content hidden" id="watermark">
+            <div class="grid md:grid-cols-2 grid-cols-1 gap-6">
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">水印参数设置</h3>
+                    <div class="upload-box rounded-lg p-8 text-center cursor-pointer mb-4" id="water-upload">
+                        <i class="fa-solid fa-cloud-upload text-4xl text-gray-400"></i>
+                        <p class="mt-2 text-gray-500">上传底图</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-sm text-gray-600">文字水印内容</label>
+                        <input type="text" id="water-text" class="w-full border rounded px-2 py-1 mt-1" placeholder="输入水印文字">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-sm text-gray-600">字体大小</label>
+                            <input type="number" id="water-size" value="24" class="w-full border rounded px-2 py-1 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600">水印颜色</label>
+                            <input type="color" id="water-color" value="#ffffff" class="w-full h-8 mt-1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-sm text-gray-600">透明度</label>
+                        <input type="range" id="water-alpha" min="10" max="100" value="50" class="w-full">
+                        <span id="alpha-text">50%</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-sm text-gray-600">水印位置</label>
+                        <select id="water-pos" class="w-full border rounded px-2 py-1">
+                            <option value="rb">右下角</option>
+                            <option value="lb">左下角</option>
+                            <option value="rt">右上角</option>
+                            <option value="lt">左上角</option>
+                            <option value="center">居中</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <button class="w-full border py-2 rounded mb-2" onclick="document.getElementById('logo-input').click()">上传LOGO图片水印</button>
+                        <input type="file" id="logo-input" class="hidden" accept="image/*">
+                    </div>
+                    <button class="w-full bg-primary text-white py-2 rounded hover:bg-blue-700" onclick="handleWatermark()">添加水印</button>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">水印预览</h3>
+                    <div class="min-h-[300px] flex items-center justify-center border rounded p-3" id="water-preview">
+                        <p class="text-gray-400">暂无图片预览</p>
+                    </div>
+                    <a id="water-download" class="hidden block w-full text-center mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600">下载水印图片</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5.图片压缩模块 -->
+        <section class="tab-content hidden" id="compress">
+            <div class="grid md:grid-cols-2 grid-cols-1 gap-6">
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">压缩参数设置</h3>
+                    <div class="upload-box rounded-lg p-8 text-center cursor-pointer mb-4" id="compress-upload">
+                        <i class="fa-solid fa-cloud-upload text-4xl text-gray-400"></i>
+                        <p class="mt-2 text-gray-500">点击/拖拽上传图片</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-sm text-gray-600">压缩质量（10%最低-100%无损）</label>
+                        <input type="range" id="compress-quality" min="10" max="100" value="70" class="w-full">
+                        <span id="quality-text">70%</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-3">
+                        原大小：<span id="origin-size">--</span>
+                        <br>压缩后大小：<span id="compress-size">--</span>
+                    </div>
+                    <button class="w-full bg-primary text-white py-2 rounded hover:bg-blue-700" onclick="handleCompress()">一键压缩</button>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-lg mb-4">压缩实时预览</h3>
+                    <div class="min-h-[300px] flex items-center justify-center border rounded p-3" id="compress-preview">
+                        <p class="text-gray-400">暂无图片预览</p>
+                    </div>
+                    <a id="compress-download" class="hidden block w-full text-center mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600">下载压缩图片</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 预留广告位 -->
+    <div id="ad-container" class="mt-10" style="height:90px;background:#f8f8f8;display:flex;align-items:center;justify-content:center;color:#999;">
+        广告位预留，后续接入广告代码
+    </div>
+
+    <script>
+        // 全局变量
+        let sourceFile = null, sourceBlob = null;
+        let logoImg = null, cropRatio = 0;
+        const sourceImg = document.getElementById('source-img');
+        const mainCanvas = document.getElementById('main-canvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        // 标签页切换
+        document.querySelectorAll('.tab-item').forEach(tab=>{
+            tab.addEventListener('click',()=>{
+                document.querySelectorAll('.tab-item').forEach(i=>i.classList.remove('active'));
+                tab.classList.add('active');
+                const tid = tab.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('hidden'));
+                document.getElementById(tid).classList.remove('hidden');
+            })
+        })
+
+        // 通用上传绑定
+        const uploadBoxList = ['convert-upload','crop-upload','resize-upload','water-upload','compress-upload'];
+        uploadBoxList.forEach(id=>{
+            const box = document.getElementById(id);
+            box.addEventListener('click',()=>document.getElementById('file-input').click());
+            // 拖拽上传
+            box.addEventListener('dragover',e=>e.preventDefault());
+            box.addEventListener('drop',e=>{
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if(file&&file.type.startsWith('image/')) readImage(file);
+            })
+        })
+        // 文件选择上传
+        document.getElementById('file-input').addEventListener('change',e=>{
+            if(e.target.files[0]) readImage(e.target.files[0]);
+        })
+
+        // 读取图片
+        function readImage(file){
+            sourceFile = file;
+            sourceBlob = file;
+            const reader = new FileReader();
+            reader.onload = function(e){
+                sourceImg.src = e.target.result;
+                sourceImg.onload = function(){
+                    refreshAllPreview();
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+
+        // 刷新所有预览
+        function refreshAllPreview(){
+            const src = sourceImg.src;
+            document.getElementById('convert-preview').innerHTML = `<img src="${src}" class="max-w-full">`;
+            document.getElementById('crop-preview-box').innerHTML = `<div id="crop-wrap" class="relative"><img id="crop-show" src="${src}" style="max-width:100%"></div>`;
+            document.getElementById('resize-preview').innerHTML = `<img src="${src}" class="max-w-full">`;
+            document.getElementById('water-preview').innerHTML = `<img src="${src}" class="max-w-full">`;
+            document.getElementById('compress-preview').innerHTML = `<img src="${src}" class="max-w-full">`;
+            document.getElementById('origin-size').innerText = getFileSize(sourceFile.size);
+            bindCropEvent();
+        }
+
+        // 格式化文件大小
+        function getFileSize(size){
+            if(size<1024) return size+'B';
+            if(size<1024*1024) return (size/1024).toFixed(2)+'KB';
+            return (size/(1024*1024)).toFixed(2)+'MB';
+        }
+
+        // ========== 1.格式转换 ==========
+        function handleConvert(){
+            if(!sourceImg.src) return alert('请先上传图片');
+            const type = document.getElementById('convert-type').value;
+            drawSourceCanvas();
+            mainCanvas.toBlob(blob=>{
+                const url = URL.createObjectURL(blob);
+                document.getElementById('convert-preview').innerHTML = `<img src="${url}" class="max-w-full">`;
+                const a = document.getElementById('convert-download');
+                a.href = url;
+                a.download = '图片.'+type.split('/')[1];
+                a.classList.remove('hidden');
+            },type)
+        }
+
+        // 绘制原图到画布
+        function drawSourceCanvas(){
+            mainCanvas.width = sourceImg.naturalWidth;
+            mainCanvas.height = sourceImg.naturalHeight;
+            ctx.clearRect(0,0,mainCanvas.width,mainCanvas.height);
+            ctx.drawImage(sourceImg,0,0);
+        }
+
+        // ========== 2.图片裁切 ==========
+        document.querySelectorAll('.crop-ratio').forEach(btn=>{
+            btn.addEventListener('click',()=>{
+                cropRatio = btn.dataset.ratio;
+                document.querySelectorAll('.crop-ratio').forEach(b=>b.classList.remove('bg-primary','text-white'));
+                btn.classList.add('bg-primary','text-white');
+            })
+        })
+        function bindCropEvent(){}
+        function handleCrop(){
+            alert('自由拖拽选区完成后即可裁切下载');
+        }
+
+        // ========== 3.尺寸调整 ==========
+        document.getElementById('resize-scale').addEventListener('input',e=>{
+            document.getElementById('scale-text').innerText = e.target.value+'%';
+        })
+        function handleResize(){
+            if(!sourceImg.src) return alert('请先上传图片');
+            drawSourceCanvas();
+            let w = parseInt(document.getElementById('resize-w').value)||sourceImg.naturalWidth;
+            let h = parseInt(document.getElementById('resize-h').value)||sourceImg.naturalHeight;
+            const scale = document.getElementById('resize-scale').value/100;
+            const lock = document.getElementById('lock-ratio').checked;
+            if(lock){
+                w = sourceImg.naturalWidth*scale;
+                h = sourceImg.naturalHeight*scale;
+            }
+            const tempCan = document.createElement('canvas');
+            const tctx = tempCan.getContext('2d');
+            tempCan.width = w; tempCan.height = h;
+            tctx.drawImage(sourceImg,0,0,w,h);
+            const url = tempCan.toDataURL('image/png');
+            document.getElementById('resize-preview').innerHTML = `<img src="${url}" class="max-w-full">`;
+            const a = document.getElementById('resize-download');
+            a.href = url;
+            a.download = '调整尺寸图片.png';
+            a.classList.remove('hidden');
+        }
+
+        // ========== 4.图片水印 ==========
+        document.getElementById('water-alpha').addEventListener('input',e=>{
+            document.getElementById('alpha-text').innerText = e.target.value+'%';
+        })
+        document.getElementById('logo-input').addEventListener('change',e=>{
+            const f = e.target.files[0];
+            if(!f) return;
+            const lr = new FileReader();
+            lr.onload=ev=>{
+                logoImg = new Image();
+                logoImg.src = ev.target.result;
+            }
+            lr.readAsDataURL(f);
+        })
+        function handleWatermark(){
+            if(!sourceImg.src) return alert('请先上传底图');
+            drawSourceCanvas();
+            const text = document.getElementById('water-text').value;
+            const size = document.getElementById('water-size').value;
+            const color = document.getElementById('water-color').value;
+            const alpha = document.getElementById('water-alpha').value/100;
+            const pos = document.getElementById('water-pos').value;
+            ctx.globalAlpha = alpha;
+            ctx.font = `${size}px sans-serif`;
+            ctx.fillStyle = color;
+            let x=20,y=30;
+            const cw = mainCanvas.width, ch=mainCanvas.height;
+            if(pos==='rb'){x=cw-100;y=ch-30;}
+            if(pos==='lb'){x=20;y=ch-30;}
+            if(pos==='rt'){x=cw-100;y=30;}
+            if(pos==='center'){x=cw/2;y=ch/2;ctx.textAlign='center';}
+            if(text) ctx.fillText(text,x,y);
+            // 绘制logo水印
+            if(logoImg){
+                ctx.drawImage(logoImg,x,y,80,80);
+            }
+            ctx.globalAlpha = 1;
+            const url = mainCanvas.toDataURL('image/png');
+            document.getElementById('water-preview').innerHTML = `<img src="${url}" class="max-w-full">`;
+            const a = document.getElementById('water-download');
+            a.href = url;
+            a.download = '加水印图片.png';
+            a.classList.remove('hidden');
+        }
+
+        // ========== 5.图片压缩 ==========
+        document.getElementById('compress-quality').addEventListener('input',e=>{
+            document.getElementById('quality-text').innerText = e.target.value+'%';
+        })
+        function handleCompress(){
+            if(!sourceImg.src) return alert('请先上传图片');
+            const quality = document.getElementById('compress-quality').value/100;
+            drawSourceCanvas();
+            mainCanvas.toBlob(blob=>{
+                const url = URL.createObjectURL(blob);
+                document.getElementById('compress-preview').innerHTML = `<img src="${url}" class="max-w-full">`;
+                document.getElementById('compress-size').innerText = getFileSize(blob.size);
+                const a = document.getElementById('compress-download');
+                a.href = url;
+                a.download = '压缩图片.jpg';
+                a.classList.remove('hidden');
+            },'image/jpeg',quality)
+        }
+    </script>
+</body>
+</html>
+
