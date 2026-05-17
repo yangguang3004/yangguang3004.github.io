@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🍅 自定义番茄钟 · 专注与可调休息</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 避免移动端长按菜单，不影响文本 */
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #1e2b3c 0%, #0f1a24 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'SF Pro Text', 'Inter', system-ui, -apple-system, 'Roboto', sans-serif;
+            padding: 1.5rem;
+        }
+
+        /* 主卡片 */
+        .tomato-card {
+            background: rgba(22, 34, 48, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 3rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 550px;
+            padding: 2rem 1.8rem 2.5rem;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 160, 122, 0.25);
+        }
+
+        /* 状态头部 */
+        .state-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            gap: 12px;
+        }
+        .mode-badge {
+            background: #ff7b4a20;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            color: #ffad8a;
+            backdrop-filter: blur(4px);
+            border: 1px solid #ff8c5a50;
+        }
+        .tomato-count {
+            background: #2c3e2f30;
+            backdrop-filter: blur(4px);
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #c0e0c0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tomato-count span:first-child {
+            font-size: 1.1rem;
+        }
+        .tomato-count .count-number {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #ffb347;
+            background: #00000030;
+            padding: 0 6px;
+            border-radius: 30px;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        /* 计时器圆形区域 */
+        .timer-wrapper {
+            text-align: center;
+            margin: 1.5rem 0 0.8rem;
+            position: relative;
+        }
+        .time-display {
+            font-size: 5.2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+            letter-spacing: 6px;
+            background: linear-gradient(135deg, #fff3e0, #ffcf9a);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin: 0.5rem 0;
+        }
+        /* 进度条 */
+        .progress-container {
+            background: #1f2e3a;
+            border-radius: 60px;
+            height: 12px;
+            width: 90%;
+            margin: 0.8rem auto 1.2rem;
+            overflow: hidden;
+            box-shadow: inset 0 1px 4px #00000040;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff9966, #ff5e62);
+            border-radius: 60px;
+            transition: width 0.2s linear;
+            box-shadow: 0 0 6px #ff7e5e;
+        }
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin: 2rem 0 1.5rem;
+        }
+        .btn {
+            border: none;
+            background: rgba(30, 45, 55, 0.9);
+            backdrop-filter: blur(4px);
+            padding: 0.8rem 1.6rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 60px;
+            color: #f0ede8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 140, 100, 0.3);
+        }
+        .btn-primary {
+            background: #e25c3a;
+            color: white;
+            box-shadow: 0 6px 14px rgba(226, 92, 58, 0.3);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: #cf4a2a;
+            transform: scale(0.97);
+        }
+        .btn-secondary {
+            background: #2c4255;
+            border-color: #ff8c5a60;
+        }
+        .btn-secondary:hover {
+            background: #1e3347;
+            transform: translateY(-2px);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #ff9f7c;
+            color: #ffbc9a;
+        }
+        .btn-outline:hover {
+            background: #ff7b4a20;
+            border-color: #ff885e;
+        }
+        .reset-count {
+            background: #2e3b2e;
+            border-color: #9fcc9f60;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin: 1rem 0 0.8rem;
+        }
+        .mode-btn {
+            background: #1a2b36;
+            padding: 0.5rem 1.6rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #cbd5e1;
+            border: 1px solid #3e5a6b;
+        }
+        .mode-btn.active {
+            background: #ff6f42;
+            color: white;
+            border-color: #ffb485;
+            box-shadow: 0 0 8px #ff7b3e;
+        }
+        /* 自定义休息区域 */
+        .custom-break-area {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 60px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            backdrop-filter: blur(4px);
+            border: 1px solid #ffbc9a30;
+        }
+        .custom-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #ffcfb0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .custom-label span {
+            font-size: 1.1rem;
+        }
+        .break-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1e2f3b;
+            padding: 0.2rem 0.8rem;
+            border-radius: 50px;
+            border: 1px solid #ffa06760;
+        }
+        .break-input-group input {
+            background: transparent;
+            border: none;
+            width: 65px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffcf9a;
+            text-align: center;
+            font-family: monospace;
+            outline: none;
+            padding: 6px 0;
+        }
+        .break-input-group input:focus {
+            border-bottom: 1px solid #ff8c5a;
+        }
+        .break-input-group span {
+            color: #ffb78c;
+            font-weight: 500;
+        }
+        .apply-break-btn {
+            background: #2f5a6e;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px black;
+        }
+        .apply-break-btn:hover {
+            background: #3f6f86;
+            transform: scale(0.96);
+        }
+        .current-break-hint {
+            font-size: 0.7rem;
+            color: #bbd4e6;
+            background: #1f2c34;
+            border-radius: 30px;
+            padding: 0.2rem 0.8rem;
+        }
+        /* 通知toast */
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: #1e2e3cd9;
+            backdrop-filter: blur(16px);
+            padding: 12px 24px;
+            border-radius: 80px;
+            color: #ffecd6;
+            font-weight: 500;
+            font-size: 1rem;
+            border-left: 6px solid #ff8a5c;
+            box-shadow: 0 12px 28px black;
+            z-index: 1000;
+            transition: all 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            font-family: monospace;
+        }
+        .toast-msg.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+        @media (max-width: 480px) {
+            .tomato-card {
+                padding: 1.5rem 1.2rem;
+            }
+            .time-display {
+                font-size: 3.6rem;
+                letter-spacing: 4px;
+            }
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.85rem;
+            }
+            .mode-btn {
+                padding: 0.4rem 1rem;
+            }
+            .toast-msg {
+                white-space: nowrap;
+                font-size: 0.8rem;
+                padding: 8px 18px;
+            }
+            .custom-break-area {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .break-input-group {
+                justify-content: space-between;
+            }
+        }
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6f8f9f;
+            margin-top: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="tomato-card">
+    <div class="state-header">
+        <div class="mode-badge" id="modeStatusText">🍅 专注时间</div>
+        <div class="tomato-count">
+            <span>🍅 番茄完成</span>
+            <span class="count-number" id="tomatoCountDisplay">0</span>
+        </div>
+    </div>
+
+    <div class="timer-wrapper">
+        <div class="time-display" id="timerDisplay">25:00</div>
+        <div class="progress-container">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-primary" id="startBtn">▶ 开始</button>
+        <button class="btn btn-secondary" id="pauseBtn">⏸ 暂停</button>
+        <button class="btn btn-outline" id="resetBtn">🔄 重置</button>
+    </div>
+
+    <div class="mode-selector">
+        <div class="mode-btn" data-mode="work" id="workModeBtn">🍅 工作 · 25分</div>
+        <div class="mode-btn" data-mode="break" id="breakModeBtn">☕️ 休息 · 可调</div>
+    </div>
+
+    <!-- 自定义休息时间区域 -->
+    <div class="custom-break-area">
+        <div class="custom-label">
+            <span>🕒</span> 自定义休息时长
+        </div>
+        <div class="break-input-group">
+            <input type="number" id="customBreakInput" min="1" max="120" step="1" value="5">
+            <span>分钟</span>
+        </div>
+        <button class="apply-break-btn" id="applyBreakBtn">应用并更新</button>
+        <div class="current-break-hint" id="currentBreakHint">当前休息: 5分钟</div>
+    </div>
+    
+    <div style="display: flex; justify-content: center; margin-top: 10px;">
+        <button class="btn reset-count" id="resetCountBtn">🗑 重置番茄计数</button>
+    </div>
+    <footer>🍅 工作固定25分钟 · 休息时长自由定制，暂停时修改即刻生效</footer>
+</div>
+
+<div id="toastMsg" class="toast-msg">🍅 时间到~</div>
+
+<script>
+    // -------- 番茄钟核心 ----------
+    // 工作固定时长 (25分钟)
+    const WORK_SECONDS = 25 * 60;   // 1500秒
+    // 休息时长: 可变量，默认5分钟
+    let BREAK_SECONDS = 5 * 60;     // 默认300秒
+
+    // 状态变量
+    let currentMode = "work";          // "work" 或 "break"
+    let remainingSeconds = WORK_SECONDS;   // 当前剩余秒数
+    let timerInterval = null;
+    let isRunning = false;
+    let tomatoCount = 0;                // 完成的番茄个数(仅工作完成增加)
+
+    // DOM 元素
+    const timerDisplay = document.getElementById("timerDisplay");
+    const modeStatusText = document.getElementById("modeStatusText");
+    const tomatoCountSpan = document.getElementById("tomatoCountDisplay");
+    const progressFill = document.getElementById("progressFill");
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const workModeBtn = document.getElementById("workModeBtn");
+    const breakModeBtn = document.getElementById("breakModeBtn");
+    const resetCountBtn = document.getElementById("resetCountBtn");
+    const toastMsgDiv = document.getElementById("toastMsg");
+    // 自定义休息元素
+    const customBreakInput = document.getElementById("customBreakInput");
+    const applyBreakBtn = document.getElementById("applyBreakBtn");
+    const currentBreakHint = document.getElementById("currentBreakHint");
+
+    // 辅助: 显示浮动提示 (2秒后消失)
+    let toastTimer = null;
+    function showMessage(text, isError = false) {
+        if (toastTimer) clearTimeout(toastTimer);
+        toastMsgDiv.textContent = text;
+        toastMsgDiv.classList.add("show");
+        toastTimer = setTimeout(() => {
+            toastMsgDiv.classList.remove("show");
+        }, 2200);
+    }
+
+    // 获得当前模式总时长(秒) -> 动态读取工作固定/休息可变
+    function getModeTotalSeconds() {
+        return currentMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+    }
+
+    // 更新页面显示 (剩余时间文字 + 进度条)
+    function updateDisplayAndProgress() {
+        const minutes = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        // 更新进度条百分比
+        const total = getModeTotalSeconds();
+        let percent = total > 0 ? (remainingSeconds / total) * 100 : 0;
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
+        progressFill.style.width = `${percent}%`;
+        
+        // 动态改变进度条颜色
+        if (currentMode === "work") {
+            progressFill.style.background = "linear-gradient(90deg, #ff9966, #ff5e62)";
+        } else {
+            progressFill.style.background = "linear-gradient(90deg, #6bcb77, #4d9f6e)";
+        }
+
+        // 动态标题
+        document.title = `🍅 ${timerDisplay.textContent} - ${currentMode === 'work' ? '专注中' : '小憩'}`;
+    }
+
+    // 更新模式UI文本及高亮 + 刷新休息时长提示
+    function updateModeUI() {
+        if (currentMode === "work") {
+            modeStatusText.innerHTML = "🍅 专注时间 · 深度工作";
+            workModeBtn.classList.add("active");
+            breakModeBtn.classList.remove("active");
+        } else {
+            modeStatusText.innerHTML = "🌿 休息时间 · 放松片刻";
+            breakModeBtn.classList.add("active");
+            workModeBtn.classList.remove("active");
+        }
+        // 刷新当前休息时长的显示 (不论模式，展示休息设定值)
+        const breakMinutes = Math.floor(BREAK_SECONDS / 60);
+        currentBreakHint.innerText = `当前休息: ${breakMinutes}分钟`;
+        updateDisplayAndProgress();
+    }
+
+    // 停止计时器
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        isRunning = false;
+    }
+
+    // 重置当前模式的剩余时间为该模式的默认完整时长
+    function resetRemainingToDefault() {
+        const defaultSeconds = currentMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+        remainingSeconds = defaultSeconds;
+        updateDisplayAndProgress();
+    }
+
+    // 完全重置 (停止计时 + 重置当前模式剩余时间为默认)
+    function fullReset() {
+        stopTimer();
+        resetRemainingToDefault();
+        isRunning = false;
+        showMessage(`已重置为 ${currentMode === "work" ? "工作" : "休息"} 模式 (休息时长: ${Math.floor(BREAK_SECONDS/60)}分钟)`, false);
+    }
+
+    // 增加番茄计数
+    function incrementTomatoCount() {
+        tomatoCount++;
+        tomatoCountSpan.innerText = tomatoCount;
+        showMessage(`🎉 恭喜! 完成一个番茄钟! 累计 ${tomatoCount} 个 🍅`, false);
+    }
+
+    // 切换模式 (不自动开始计时)
+    function switchMode(mode) {
+        if (mode !== "work" && mode !== "break") return;
+        if (currentMode === mode) {
+            showMessage(`已经是${mode === "work" ? "工作" : "休息"}模式`, false);
+            return;
+        }
+        stopTimer();                 // 停止倒计时
+        currentMode = mode;
+        // 剩余时间设置为新模式的完整时长（使用动态总秒数）
+        remainingSeconds = currentMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+        updateModeUI();
+        updateDisplayAndProgress();
+        isRunning = false;
+        showMessage(`已切换至${mode === "work" ? "工作(25分钟)" : "休息("+Math.floor(BREAK_SECONDS/60)+"分钟)"}模式`, false);
+    }
+
+    // 倒计时结束核心处理
+    function handleTimerEnd() {
+        stopTimer();
+        playBeepSound();
+        flashTitleAndNotify();
+        
+        if (currentMode === "work") {
+            // 工作结束 → 增加番茄计数，切换到休息
+            incrementTomatoCount();
+            currentMode = "break";
+            remainingSeconds = BREAK_SECONDS;  // 使用最新的自定义休息时长
+            updateModeUI();
+            updateDisplayAndProgress();
+            showMessage(`🍅 工作时段结束！进入休息 (${Math.floor(BREAK_SECONDS/60)}分钟)。点击「开始」继续～`, false);
+        } 
+        else { // 休息模式结束
+            currentMode = "work";
+            remainingSeconds = WORK_SECONDS;
+            updateModeUI();
+            updateDisplayAndProgress();
+            showMessage("☕️ 休息结束！新番茄钟已就绪，开始专注吧！", false);
+        }
+        isRunning = false;
+        document.title = `🍅 番茄钟 · ${currentMode === "work" ? "待专注" : "待休息"}`;
+    }
+
+    // 倒计时滴答
+    function tick() {
+        if (!isRunning) return;
+        if (remainingSeconds <= 0) {
+            handleTimerEnd();
+        } else {
+            remainingSeconds--;
+            updateDisplayAndProgress();
+            if (remainingSeconds === 0) {
+                handleTimerEnd();
+            }
+        }
+    }
+
+    // 开始计时
+    function startTimer() {
+        if (isRunning) {
+            showMessage("计时器已经在运行中~", false);
+            return;
+        }
+        if (remainingSeconds <= 0) {
+            remainingSeconds = currentMode === "work" ? WORK_SECONDS : BREAK_SECONDS;
+            updateDisplayAndProgress();
+            showMessage(`重新开始${currentMode === "work" ? "工作" : "休息"}计时`, false);
+        }
+        if (timerInterval) clearInterval(timerInterval);
+        isRunning = true;
+        timerInterval = setInterval(() => {
+            tick();
+        }, 1000);
+    }
+
+    // 暂停
+    function pauseTimer() {
+        if (!isRunning) {
+            showMessage("计时器未运行", false);
+            return;
+        }
+        stopTimer();
+        showMessage("已暂停，点击「开始」继续", false);
+    }
+    
+    // 重置当前模式计时器
+    function resetCurrentTimer() {
+        stopTimer();
+        resetRemainingToDefault();
+        isRunning = false;
+        showMessage(`重置为${currentMode === "work" ? "工作(25分钟)" : "休息("+Math.floor(BREAK_SECONDS/60)+"分钟)"}模式`, false);
+    }
+
+    // 重置番茄计数
+    function resetTomatoCount() {
+        tomatoCount = 0;
+        tomatoCountSpan.innerText = "0";
+        showMessage("番茄计数已重置 🧹", false);
+    }
+
+    // ---------- 自定义休息时长逻辑 ----------
+    function applyCustomBreakTime() {
+        let minutes = parseInt(customBreakInput.value, 10);
+        if (isNaN(minutes) || minutes < 1) minutes = 1;
+        if (minutes > 120) minutes = 120;   // 上限2小时，保证合理
+        const newSeconds = minutes * 60;
+        
+        // 如果新时长和当前相同，仅提示无需改变
+        if (newSeconds === BREAK_SECONDS) {
+            showMessage(`休息时长已经是 ${minutes} 分钟`, false);
+            return;
+        }
+        
+        // 关键: 如果计时器正在运行且当前处于休息模式，禁止直接修改时长（避免计时混乱）
+        if (isRunning && currentMode === "break") {
+            showMessage("⚠️ 请先「暂停」计时器，再修改休息时长", true);
+            return;
+        }
+        
+        // 更新全局休息秒数
+        BREAK_SECONDS = newSeconds;
+        // 同步输入框显示（格式化）
+        customBreakInput.value = minutes;
+        currentBreakHint.innerText = `当前休息: ${minutes}分钟`;
+        
+        // 如果当前模式是休息且计时器未运行（暂停状态或停止状态），将剩余时间更新为新时长
+        if (currentMode === "break" && !isRunning) {
+            remainingSeconds = BREAK_SECONDS;
+            updateDisplayAndProgress();
+            showMessage(`✅ 休息时长已更新为 ${minutes} 分钟，倒计时已同步`, false);
+        } 
+        else if (currentMode === "break" && isRunning) {
+            // 实际上前面已经拦截运行状态，但再加一层安全保护
+            showMessage("请先暂停计时再修改休息时长", true);
+            // 回滚输入框显示原值
+            const oldMin = Math.floor(BREAK_SECONDS / 60);
+            customBreakInput.value = oldMin;
+            currentBreakHint.innerText = `当前休息: ${oldMin}分钟`;
+            BREAK_SECONDS = oldMin * 60;
+            return;
+        }
+        else {
+            // 当前是工作模式，只更新全局，不影响工作倒计时
+            showMessage(`⏲️ 休息时长已设为 ${minutes} 分钟，下次休息生效`, false);
+        }
+        
+        // 额外处理：如果当前剩余时间超过新的休息总时长且处于休息且未运行，理论上已同步，无需额外动作
+        // 更新UI中的模式提示（可能显示休息分钟数）
+        updateModeUI();  // 刷新显示当前休息时长提示
+    }
+
+    // ---------- 提示音 (Web Audio) ----------
+    let audioContext = null;
+    function initAudioContext() {
+        if (audioContext) return audioContext;
+        try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioContext = new AudioContext();
+            return audioContext;
+        } catch(e) {
+            console.warn("Web Audio API 不支持");
+            return null;
+        }
+    }
+    
+    function playBeepSound() {
+        if (!audioContext) {
+            initAudioContext();
+        }
+        if (!audioContext) return;
+        if (audioContext.state === "suspended") {
+            audioContext.resume().then(() => actuallyPlayBeep()).catch(e => console.warn);
+        } else if (audioContext.state === "running") {
+            actuallyPlayBeep();
+        } else {
+            audioContext.resume().then(() => actuallyPlayBeep()).catch(()=>{});
+        }
+    }
+    
+    function actuallyPlayBeep() {
+        if (!audioContext) return;
+        const now = audioContext.currentTime;
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 880;
+        gainNode.gain.value = 0.25;
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, now + 0.6);
+        oscillator.stop(now + 0.5);
+    }
+    
+    function unlockAudioOnUserGesture() {
+        if (!audioContext) initAudioContext();
+        if (audioContext && audioContext.state === "suspended") {
+            audioContext.resume().catch(e => console.log);
+        }
+    }
+    
+    // 标题闪烁+通知
+    let flashInterval = null;
+    function flashTitleAndNotify() {
+        if (flashInterval) clearInterval(flashInterval);
+        let count = 0;
+        const flashMsg = currentMode === "work" ? "🍅 工作完成！休息一下吧" : "🌿 休息结束！开始新番茄";
+        flashInterval = setInterval(() => {
+            if (count >= 6) {
+                clearInterval(flashInterval);
+                flashInterval = null;
+                document.title = originalTitle;
+                return;
+            }
+            if (count % 2 === 0) {
+                document.title = `⏰ ${flashMsg} ⏰`;
+            } else {
+                document.title = `🍅 番茄钟提醒`;
+            }
+            count++;
+        }, 500);
+        setTimeout(() => {
+            if (flashInterval) {
+                clearInterval(flashInterval);
+                flashInterval = null;
+                document.title = originalTitle;
+            }
+        }, 3000);
+        
+        if (Notification.permission === "granted") {
+            new Notification("🍅 番茄时钟提醒", {
+                body: flashMsg,
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23FF6347'/%3E%3Ctext x='50' y='70' font-size='50' text-anchor='middle' fill='white'%3E🍅%3C/text%3E%3C/svg%3E"
+            });
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+        showMessage(flashMsg, false);
+    }
+    
+    let originalTitle = document.title;
+
+    // ----- 事件绑定与初始化 -----
+    function bindEvents() {
+        startBtn.addEventListener("click", () => {
+            unlockAudioOnUserGesture();
+            startTimer();
+        });
+        pauseBtn.addEventListener("click", () => {
+            unlockAudioOnUserGesture();
+            pauseTimer();
+        });
+        resetBtn.addEventListener("click", () => {
+            unlockAudioOnUserGesture();
+            resetCurrentTimer();
+        });
+        workModeBtn.addEventListener("click", () => {
+            unlockAudioOnUserGesture();
+            switchMode("work");
+        });
+        breakModeBtn.addEventListener("click", () => {
+            unlockAudioOnUserGesture();
+            switchMode("break");
+        });
+        resetCountBtn.addEventListener("click", () => {
+            unlockAudioOnUserGesture();
+            resetTomatoCount();
+        });
+        applyBreakBtn.addEventListener("click", () => {
+            unlockAudioOnUserGesture();
+            applyCustomBreakTime();
+        });
+        // 额外: 输入框回车支持
+        customBreakInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                applyCustomBreakTime();
+            }
+        });
+    }
+    
+    // 初始化显示
+    function init() {
+        remainingSeconds = WORK_SECONDS;
+        currentMode = "work";
+        tomatoCount = 0;
+        tomatoCountSpan.innerText = "0";
+        BREAK_SECONDS = 5 * 60;
+        customBreakInput.value = 5;
+        updateModeUI();
+        updateDisplayAndProgress();
+        bindEvents();
+        initAudioContext();
+        originalTitle = document.title;
+        isRunning = false;
+        stopTimer();
+    }
+    
+    init();
+</script>
+</body>
+</html>

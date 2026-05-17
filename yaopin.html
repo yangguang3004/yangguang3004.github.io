@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>药品说明书查询库 · 支持自定义录入</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f5 0%, #dfe8ef 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, 'Noto Sans', sans-serif;
+            padding: 1.5rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.25);
+            overflow: hidden;
+            padding: 1.8rem 2rem 1.8rem 2rem;
+            transition: all 0.2s;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 1.6rem;
+        }
+        .hero h1 {
+            font-size: 2.1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #155a44, #238b68);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .hero .sub {
+            color: #4b6b78;
+            margin-top: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        /* 搜索 & 管理栏 */
+        .search-section {
+            background: white;
+            border-radius: 1.8rem;
+            padding: 1.3rem 1.5rem;
+            margin-bottom: 1.8rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .search-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .search-input-group {
+            flex: 4;
+            min-width: 200px;
+        }
+        .search-input-group input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            font-size: 1rem;
+            border: 1.5px solid #dce5ea;
+            border-radius: 2rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-input-group input:focus {
+            border-color: #238b68;
+            box-shadow: 0 0 0 3px rgba(35,139,104,0.2);
+        }
+        .btn {
+            border: none;
+            background: #238b68;
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .btn-outline {
+            background: #ecf3f0;
+            color: #1f6e55;
+            border: 1px solid #cde0da;
+        }
+        .btn-outline:hover {
+            background: #ddeae5;
+        }
+        .btn-sm {
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+        }
+        .btn-danger {
+            background: #c4736e;
+        }
+        .btn-danger:hover {
+            background: #ac5c57;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-top: 0.6rem;
+        }
+        .hot-tags {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+            padding-top: 0.6rem;
+            border-top: 1px solid #e2edf2;
+        }
+        .hot-drug {
+            background: #f9fdfb;
+            border: 1px solid #cbe0d9;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .hot-drug:hover {
+            background: #238b68;
+            color: white;
+        }
+
+        /* 主区域两栏 */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1.8rem;
+        }
+        .drug-list-panel {
+            background: white;
+            border-radius: 1.8rem;
+            padding: 0.8rem 0;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.05);
+            max-height: 68vh;
+            overflow-y: auto;
+        }
+        .drug-list-header {
+            padding: 0.5rem 1.2rem 0.6rem;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #eef3f7;
+            color: #1d5b48;
+        }
+        .drug-items {
+            list-style: none;
+        }
+        .drug-item {
+            padding: 0.7rem 1rem 0.7rem 1.2rem;
+            margin: 0.2rem 0.5rem;
+            border-radius: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s;
+        }
+        .drug-item .drug-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            flex: 1;
+        }
+        .drug-item .drug-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0.6;
+        }
+        .drug-item:hover .drug-actions {
+            opacity: 1;
+        }
+        .action-icon {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 30px;
+            width: 26px;
+            text-align: center;
+            transition: 0.1s;
+        }
+        .action-icon.edit {
+            color: #2c7a5e;
+        }
+        .action-icon.delete {
+            color: #bc6f6a;
+        }
+        .action-icon:hover {
+            background: #eef3f0;
+            transform: scale(1.05);
+        }
+        .drug-item.active {
+            background: #238b68;
+            color: white;
+        }
+        .drug-item.active .action-icon {
+            color: #fff3e0;
+        }
+        .no-match {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #8ba0aa;
+        }
+
+        /* 详情区域 */
+        .detail-panel {
+            background: white;
+            border-radius: 1.8rem;
+            padding: 1.5rem 1.8rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            max-height: 68vh;
+            overflow-y: auto;
+        }
+        .detail-title {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #1a5e4a;
+            border-left: 5px solid #238b68;
+            padding-left: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .info-card {
+            background: #fafefe;
+            border-radius: 1rem;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.9rem;
+            border: 1px solid #e4efeb;
+        }
+        .info-label {
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #238b68;
+            margin-bottom: 0.4rem;
+        }
+        .info-content {
+            font-size: 0.95rem;
+            line-height: 1.45;
+            color: #1f2f38;
+        }
+
+        /* 模态框 */
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal-mask.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-container {
+            background: white;
+            max-width: 550px;
+            width: 90%;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 35px rgba(0,0,0,0.3);
+        }
+        .modal-container h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #1d5b48;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.7rem;
+            border: 1px solid #cbdde6;
+            border-radius: 1rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 1.2rem;
+        }
+        .disclaimer {
+            margin-top: 1.8rem;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #7f9aa6;
+        }
+        @media (max-width: 780px) {
+            .main-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .container { padding: 1rem; }
+            body { padding: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <h1>📖 智慧药典 · 药品说明书</h1>
+        <div class="sub">支持自定义录入 / 本地永久保存 / 用药参考</div>
+    </div>
+
+    <div class="search-section">
+        <div class="search-wrapper">
+            <div class="search-input-group">
+                <input type="text" id="searchInput" placeholder="🔍 输入药品名称查询 (阿莫西林/布洛芬...)" autocomplete="off">
+            </div>
+            <button class="btn" id="searchBtn">🔍 查询</button>
+            <button class="btn btn-outline" id="resetBtn">🔄 全部</button>
+            <button class="btn" id="openAddModalBtn">➕ 新增药品</button>
+        </div>
+        <div class="action-buttons">
+            <button class="btn-outline btn-sm" id="clearCustomBtn" style="background:#f8eceb;">🗑️ 删除所有自定义药品</button>
+        </div>
+        <div class="hot-tags">
+            <span style="font-size:0.75rem;">✨ 快速查询：</span>
+            <span class="hot-drug" data-name="阿莫西林胶囊">阿莫西林胶囊</span>
+            <span class="hot-drug" data-name="布洛芬缓释胶囊">布洛芬缓释胶囊</span>
+            <span class="hot-drug" data-name="维生素C片">维生素C片</span>
+            <span class="hot-drug" data-name="板蓝根颗粒">板蓝根颗粒</span>
+            <span class="hot-drug" data-name="氨溴索口服液">氨溴索口服液</span>
+        </div>
+        <div class="disclaimer" style="margin-top:8px; font-size:0.7rem; text-align:left;">💡 提示：点击药品右侧 ✏️可编辑 | 🗑️可删除（仅限自定义药品）。内置药品不可删除但可复制信息新增。所有数据储存在浏览器中，永久有效。</div>
+    </div>
+
+    <div class="main-grid">
+        <div class="drug-list-panel">
+            <div class="drug-list-header">
+                <span>💊 药品名录</span>
+                <span class="drug-count" id="drugCount">0</span>
+            </div>
+            <ul class="drug-items" id="drugListContainer">
+                <li class="no-match">📋 加载中...</li>
+            </ul>
+        </div>
+        <div class="detail-panel" id="detailPanel">
+            <div class="empty-detail" style="text-align:center; padding:2rem;">✨ 点击左侧药品查看详细说明书<br>或使用「新增药品」扩充您的药典</div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框：新增/编辑药品 -->
+<div id="drugModal" class="modal-mask">
+    <div class="modal-container">
+        <h3 id="modalTitle">➕ 添加新药品</h3>
+        <form id="drugForm">
+            <input type="hidden" id="editId" value="">
+            <div class="form-group">
+                <label>* 药品名称</label>
+                <input type="text" id="drugName" required placeholder="例如：氯雷他定片">
+            </div>
+            <div class="form-group">
+                <label>主要成分</label>
+                <textarea id="composition" placeholder="主要化学成分或药材"></textarea>
+            </div>
+            <div class="form-group">
+                <label>适应症 / 功能主治</label>
+                <textarea id="indications" placeholder="用于治疗..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>用法用量</label>
+                <textarea id="usage" placeholder="口服，一次..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>不良反应</label>
+                <textarea id="adverseReactions" placeholder="可能出现..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>禁忌症</label>
+                <textarea id="contraindications" placeholder="禁止使用人群"></textarea>
+            </div>
+            <div class="form-group">
+                <label>注意事项</label>
+                <textarea id="notes" placeholder="储存、药物相互作用等"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-outline" id="closeModalBtn">取消</button>
+                <button type="submit" class="btn">💾 保存药品</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ---------- 药品数据架构 ----------
+    // 内置药品（不可编辑/删除，不可修改内置内容，但可以基于它新增）
+    const BUILT_IN_DRUGS = [
+        { id: -1, name: "阿莫西林胶囊", composition: "阿莫西林（半合成青霉素类）", indications: "用于敏感菌所致的呼吸道、泌尿道、皮肤软组织感染等。", usage: "成人一次0.5g，每6~8小时一次，一日总量不超过4g。", adverseReactions: "恶心、腹泻、皮疹、药物热等。", contraindications: "青霉素过敏者禁用。", notes: "用药前必须进行青霉素皮试。" },
+        { id: -2, name: "布洛芬缓释胶囊", composition: "布洛芬", indications: "缓解轻至中度疼痛，如头痛、关节痛、牙痛、痛经，以及感冒发热。", usage: "成人一次0.3g（1粒），一日2次，整粒吞服。", adverseReactions: "胃部不适、恶心、消化道溃疡。", contraindications: "对布洛芬过敏者、孕妇及哺乳期妇女禁用。", notes: "止痛不超过5天，解热不超过3天。" },
+        { id: -3, name: "维生素C片", composition: "维生素C", indications: "预防坏血病，增强免疫力，辅助治疗急慢性感染。", usage: "成人一次0.1g，一日3次。", adverseReactions: "过量可能引起腹泻、结石。", contraindications: "痛风患者慎用。", notes: "不宜与维生素B12同服。" },
+        { id: -4, name: "板蓝根颗粒", composition: "板蓝根", indications: "清热解毒，凉血利咽。用于咽喉肿痛、扁桃体炎。", usage: "一次5~10克，一日3~4次。", adverseReactions: "偶见轻度恶心。", contraindications: "糖尿病患者慎用（含糖）。", notes: "不宜与滋补性中药同服。" },
+        { id: -5, name: "氨溴索口服液", composition: "盐酸氨溴索", indications: "适用于痰液粘稠不易咳出。", usage: "成人及12岁以上一次10ml，一日2次。", adverseReactions: "轻微胃肠道不适。", contraindications: "妊娠早期慎用。", notes: "避免与中枢镇咳药合用。" }
+    ];
+
+    // localStorage 键名
+    const STORAGE_KEY = "custom_drugs_list";
+
+    // 当前展示的数据（合并后的完整列表） + 当前选中id + 当前搜索关键词
+    let fullDrugsList = [];          // 合并内置+自定义，用于渲染
+    let activeDrugId = null;
+    let currentSearchKeyword = "";
+
+    // DOM 元素
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const drugListContainer = document.getElementById('drugListContainer');
+    const detailPanel = document.getElementById('detailPanel');
+    const drugCountSpan = document.getElementById('drugCount');
+    const openAddModalBtn = document.getElementById('openAddModalBtn');
+    const modal = document.getElementById('drugModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const drugForm = document.getElementById('drugForm');
+    const modalTitle = document.getElementById('modalTitle');
+    const editIdInput = document.getElementById('editId');
+    const clearCustomBtn = document.getElementById('clearCustomBtn');
+
+    // 辅助函数 ------------------------------------
+    // 加载自定义药品
+    function loadCustomDrugs() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch(e) { return []; }
+        }
+        return [];
+    }
+
+    // 保存自定义药品
+    function saveCustomDrugs(customArray) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(customArray));
+    }
+
+    // 获取完整药品列表（内置 + 自定义，自定义会生成新id保证正数）
+    function getFullDrugList() {
+        const customDrugs = loadCustomDrugs();
+        // 确保每个自定义药品都有完整字段 (旧数据兼容)
+        const validatedCustom = customDrugs.map(d => ({
+            id: d.id,
+            name: d.name || "未命名药品",
+            composition: d.composition || "暂无信息",
+            indications: d.indications || "暂无信息",
+            usage: d.usage || "暂无信息",
+            adverseReactions: d.adverseReactions || "暂无信息",
+            contraindications: d.contraindications || "暂无信息",
+            notes: d.notes || "请遵医嘱",
+        }));
+        return [...BUILT_IN_DRUGS, ...validatedCustom];
+    }
+
+    // 刷新完整列表 (同步全局变量并刷新UI，根据当前搜索关键词过滤)
+    function refreshFullListAndRender() {
+        fullDrugsList = getFullDrugList();
+        applySearchAndRender();
+    }
+
+    // 根据关键词过滤 + 渲染
+    function applySearchAndRender() {
+        let filtered = [...fullDrugsList];
+        if (currentSearchKeyword.trim() !== "") {
+            const kw = currentSearchKeyword.trim().toLowerCase();
+            filtered = filtered.filter(drug => drug.name.toLowerCase().includes(kw));
+        }
+        // 按名称排序 (内置和自定义混合排序，体验更好)
+        filtered.sort((a,b) => a.name.localeCompare(b.name, 'zh'));
+        
+        // 更新药品列表UI
+        if (filtered.length === 0) {
+            drugListContainer.innerHTML = `<li class="no-match">😢 未找到「${escapeHtml(currentSearchKeyword)}」相关药品<br>试试新增药品吧~</li>`;
+            drugCountSpan.innerText = "0";
+            detailPanel.innerHTML = `<div class="empty-detail">🔍 暂无匹配结果，您可以使用「新增药品」添加说明书</div>`;
+            activeDrugId = null;
+            return;
+        }
+        
+        // 确定当前选中的药品是否仍在过滤后的列表中，若不在则选中第一个
+        let targetActive = activeDrugId;
+        const exist = filtered.some(d => d.id === targetActive);
+        if (!exist || targetActive === null) {
+            targetActive = filtered[0].id;
+        }
+        activeDrugId = targetActive;
+        
+        // 渲染列表
+        renderDrugListItems(filtered);
+        // 渲染详情
+        const selectedDrug = filtered.find(d => d.id === activeDrugId);
+        if (selectedDrug) renderDetail(selectedDrug);
+        else renderDetail(filtered[0]);
+    }
+
+    // 渲染左侧列表（带编辑/删除按钮，仅自定义药品显示操作图标）
+    function renderDrugListItems(drugsArray) {
+        drugCountSpan.innerText = drugsArray.length;
+        if (drugsArray.length === 0) {
+            drugListContainer.innerHTML = `<li class="no-match">暂无药品数据</li>`;
+            return;
+        }
+        const html = drugsArray.map(drug => {
+            const isCustom = drug.id > 0;   // 自定义药品id为正整数
+            const activeClass = (activeDrugId === drug.id) ? 'active' : '';
+            return `
+                <li class="drug-item ${activeClass}" data-id="${drug.id}">
+                    <div class="drug-name">
+                        <span>💊</span>
+                        <span>${escapeHtml(drug.name)}</span>
+                    </div>
+                    ${isCustom ? `
+                        <div class="drug-actions">
+                            <button class="action-icon edit" data-id="${drug.id}" data-action="edit" title="编辑">✏️</button>
+                            <button class="action-icon delete" data-id="${drug.id}" data-action="delete" title="删除">🗑️</button>
+                        </div>
+                    ` : `
+                        <div class="drug-actions" style="opacity:0.4;">
+                            <span style="font-size:11px;">📌内置</span>
+                        </div>
+                    `}
+                </li>
+            `;
+        }).join('');
+        drugListContainer.innerHTML = html;
+        
+        // 绑定药品点击事件 (查看详情)
+        document.querySelectorAll('.drug-item').forEach(item => {
+            const id = parseInt(item.dataset.id);
+            item.addEventListener('click', (e) => {
+                // 如果点击的是按钮区域，阻止事件冒泡
+                if (e.target.classList && (e.target.classList.contains('action-icon') || e.target.closest('.drug-actions'))) return;
+                const targetDrug = fullDrugsList.find(d => d.id === id);
+                if (targetDrug) {
+                    activeDrugId = id;
+                    // 重新刷新列表高亮，同时保证当前搜索条件下列表不变
+                    applySearchAndRender(); // 会重新基于当前关键词渲染
+                }
+            });
+        });
+        
+        // 绑定编辑/删除事件 (动态)
+        document.querySelectorAll('.action-icon.edit').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const drugId = parseInt(btn.dataset.id);
+                openEditModal(drugId);
+            });
+        });
+        document.querySelectorAll('.action-icon.delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const drugId = parseInt(btn.dataset.id);
+                deleteCustomDrug(drugId);
+            });
+        });
+    }
+    
+    // 删除自定义药品
+    function deleteCustomDrug(drugId) {
+        if (drugId <= 0) {
+            alert("内置药品不可删除，您可以复制信息新增自定义版本");
+            return;
+        }
+        if (confirm("确定要删除这个药品吗？此操作不可撤销。")) {
+            let customs = loadCustomDrugs();
+            const newCustoms = customs.filter(d => d.id !== drugId);
+            if (newCustoms.length === customs.length) {
+                alert("未找到该药品或删除失败");
+                return;
+            }
+            saveCustomDrugs(newCustoms);
+            // 刷新全局数据
+            refreshFullListAndRender();
+            // 如果删除了当前激活的，自动选中第一个
+            const merged = getFullDrugList();
+            if (merged.length > 0 && activeDrugId === drugId) {
+                activeDrugId = merged[0].id;
+                applySearchAndRender();
+            } else {
+                applySearchAndRender();
+            }
+        }
+    }
+    
+    // 打开新增模态框
+    function openAddModal() {
+        modalTitle.innerText = "➕ 添加新药品";
+        editIdInput.value = "";
+        drugForm.reset();
+        modal.classList.add('active');
+    }
+    
+    // 打开编辑模态框（自定义药品）
+    function openEditModal(drugId) {
+        if (drugId <= 0) {
+            alert("内置药品不可编辑，您可以新增自定义版本进行修改");
+            return;
+        }
+        const customs = loadCustomDrugs();
+        const targetDrug = customs.find(d => d.id === drugId);
+        if (!targetDrug) {
+            alert("药品不存在");
+            return;
+        }
+        modalTitle.innerText = "✏️ 编辑药品";
+        editIdInput.value = drugId;
+        document.getElementById('drugName').value = targetDrug.name || '';
+        document.getElementById('composition').value = targetDrug.composition || '';
+        document.getElementById('indications').value = targetDrug.indications || '';
+        document.getElementById('usage').value = targetDrug.usage || '';
+        document.getElementById('adverseReactions').value = targetDrug.adverseReactions || '';
+        document.getElementById('contraindications').value = targetDrug.contraindications || '';
+        document.getElementById('notes').value = targetDrug.notes || '';
+        modal.classList.add('active');
+    }
+    
+    // 保存药品（新增/编辑）
+    function saveDrugFromForm(event) {
+        event.preventDefault();
+        const editId = editIdInput.value ? parseInt(editIdInput.value) : null;
+        const name = document.getElementById('drugName').value.trim();
+        if (!name) {
+            alert("药品名称不能为空");
+            return;
+        }
+        // 检查重名（排除当前编辑的自己）
+        const allDrugs = getFullDrugList();
+        const duplicate = allDrugs.some(d => d.name === name && (editId === null || d.id !== editId));
+        if (duplicate) {
+            alert("该药品名称已存在，请勿重复添加");
+            return;
+        }
+        
+        const newDrugData = {
+            name: name,
+            composition: document.getElementById('composition').value || "暂无信息",
+            indications: document.getElementById('indications').value || "暂无信息",
+            usage: document.getElementById('usage').value || "暂无信息",
+            adverseReactions: document.getElementById('adverseReactions').value || "暂无信息",
+            contraindications: document.getElementById('contraindications').value || "暂无信息",
+            notes: document.getElementById('notes').value || "请遵医嘱"
+        };
+        
+        let customs = loadCustomDrugs();
+        if (editId !== null) {
+            // 编辑模式
+            const index = customs.findIndex(d => d.id === editId);
+            if (index !== -1) {
+                customs[index] = { ...customs[index], ...newDrugData, id: editId };
+                saveCustomDrugs(customs);
+            } else {
+                alert("编辑失败，找不到原药品");
+                closeModal();
+                return;
+            }
+        } else {
+            // 新增模式：生成新id
+            const newId = Date.now();
+            customs.push({ id: newId, ...newDrugData });
+            saveCustomDrugs(customs);
+        }
+        
+        closeModal();
+        // 重置搜索关键词以展示完整列表
+        currentSearchKeyword = "";
+        searchInput.value = "";
+        refreshFullListAndRender();
+        // 若新增/编辑后选中新药品
+        const updatedList = getFullDrugList();
+        const target = updatedList.find(d => d.name === name);
+        if (target) {
+            activeDrugId = target.id;
+            applySearchAndRender();
+        } else {
+            applySearchAndRender();
+        }
+    }
+    
+    function closeModal() {
+        modal.classList.remove('active');
+        drugForm.reset();
+        editIdInput.value = "";
+    }
+    
+    // 清除所有自定义药品
+    function clearAllCustom() {
+        if (confirm("⚠️ 删除全部自定义药品将清空您添加的所有数据，内置药品保留。是否继续？")) {
+            localStorage.removeItem(STORAGE_KEY);
+            refreshFullListAndRender();
+            // 重置选中第一个内置药
+            const newFull = getFullDrugList();
+            if (newFull.length) {
+                activeDrugId = newFull[0].id;
+                applySearchAndRender();
+            }
+        }
+    }
+    
+    // 渲染详情
+    function renderDetail(drug) {
+        if (!drug) {
+            detailPanel.innerHTML = `<div class="empty-detail">无法加载说明书</div>`;
+            return;
+        }
+        detailPanel.innerHTML = `
+            <div class="detail-title">📄 ${escapeHtml(drug.name)}</div>
+            <div class="info-card"><div class="info-label">🧪 主要成分</div><div class="info-content">${escapeHtml(drug.composition)}</div></div>
+            <div class="info-card"><div class="info-label">🎯 适应症</div><div class="info-content">${escapeHtml(drug.indications)}</div></div>
+            <div class="info-card"><div class="info-label">💊 用法用量</div><div class="info-content">${escapeHtml(drug.usage)}</div></div>
+            <div class="info-card"><div class="info-label">⚠️ 不良反应</div><div class="info-content">${escapeHtml(drug.adverseReactions)}</div></div>
+            <div class="info-card"><div class="info-label">🚫 禁忌症</div><div class="info-content">${escapeHtml(drug.contraindications)}</div></div>
+            <div class="info-card"><div class="info-label">📌 注意事项</div><div class="info-content">${escapeHtml(drug.notes)}</div></div>
+        `;
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // 搜索逻辑
+    function performSearch() {
+        currentSearchKeyword = searchInput.value;
+        applySearchAndRender();
+    }
+    
+    function resetToAll() {
+        searchInput.value = '';
+        currentSearchKeyword = '';
+        applySearchAndRender();
+    }
+    
+    // 热门点击
+    function initHotDrugs() {
+        document.querySelectorAll('.hot-drug').forEach(el => {
+            el.addEventListener('click', () => {
+                const name = el.getAttribute('data-name');
+                searchInput.value = name;
+                performSearch();
+            });
+        });
+    }
+    
+    // 初始化加载
+    function init() {
+        refreshFullListAndRender();
+        bindEvents();
+    }
+    
+    function bindEvents() {
+        searchBtn.addEventListener('click', performSearch);
+        resetBtn.addEventListener('click', resetToAll);
+        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+        openAddModalBtn.addEventListener('click', openAddModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        drugForm.addEventListener('submit', saveDrugFromForm);
+        clearCustomBtn.addEventListener('click', clearAllCustom);
+        initHotDrugs();
+        window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    }
+    
+    init();
+</script>
+</body>
+</html>

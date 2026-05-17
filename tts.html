@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>语音助手 · 文字转语音 & 语音转文字</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f9ff 0%, #d9eaf5 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Noto Sans', sans-serif;
+            padding: 1.5rem;
+            min-height: 100vh;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(3px);
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            padding: 1.8rem 2rem 2rem;
+            transition: all 0.2s ease;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1f5e7e, #2b8c6f);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.25rem;
+        }
+
+        .sub {
+            color: #4f6f7f;
+            margin-bottom: 1.8rem;
+            border-left: 3px solid #2b8c6f;
+            padding-left: 1rem;
+            font-weight: 450;
+        }
+
+        /* 双栏布局 */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            background: white;
+            border-radius: 1.8rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem 1.5rem 1.8rem;
+            transition: transform 0.1s ease;
+            border: 1px solid rgba(100, 145, 125, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 2px solid #e2f0ec;
+            color: #195e49;
+        }
+
+        .card-header i {
+            font-size: 1.6rem;
+        }
+
+        /* 语音识别区域 */
+        .recognize-box {
+            background: #fafefc;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            border: 1px solid #d6eae3;
+            min-height: 130px;
+        }
+
+        .recognized-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #1f3e44;
+            background: #ffffff;
+            padding: 0.8rem;
+            border-radius: 1rem;
+            border: 1px solid #e2ede8;
+            min-height: 90px;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin: 1rem 0 0.5rem;
+        }
+
+        button {
+            border: none;
+            background: #2d8c70;
+            color: white;
+            padding: 0.65rem 1.3rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        button i {
+            font-style: normal;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #1c6b54;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .btn-outline {
+            background: #eff7f4;
+            color: #1e6e58;
+            border: 1px solid #c2dbd1;
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: #e2f0ea;
+            transform: translateY(-1px);
+        }
+
+        .btn-stop {
+            background: #c97e6b;
+        }
+
+        .btn-stop:hover {
+            background: #b56450;
+        }
+
+        /* 文字转语音区域 */
+        textarea {
+            width: 100%;
+            padding: 0.9rem;
+            font-size: 0.95rem;
+            border-radius: 1.2rem;
+            border: 1.5px solid #d9e5e0;
+            font-family: inherit;
+            resize: vertical;
+            transition: 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #2d8c70;
+            box-shadow: 0 0 0 3px rgba(45, 140, 112, 0.2);
+        }
+
+        .voice-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+            background: #f4faf7;
+            padding: 0.8rem 1rem;
+            border-radius: 1.5rem;
+        }
+
+        .voice-select {
+            flex: 2;
+            min-width: 150px;
+        }
+
+        select, input[type="range"] {
+            padding: 0.4rem 0.7rem;
+            border-radius: 2rem;
+            border: 1px solid #cbdfd7;
+            background: white;
+            font-size: 0.85rem;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .slider-group span {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #386a5c;
+        }
+
+        input[type="range"] {
+            width: 130px;
+        }
+
+        .badge {
+            background: #e1f0ea;
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            color: #1d6e58;
+        }
+
+        .compat-warning {
+            background: #fff5e0;
+            border-left: 5px solid #e6b422;
+            border-radius: 1rem;
+            padding: 0.8rem 1rem;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6f8e9b;
+            margin-top: 1.8rem;
+            border-top: 1px solid #d8e8e2;
+            padding-top: 1rem;
+        }
+
+        @media (max-width: 780px) {
+            body {
+                padding: 1rem;
+            }
+            .container {
+                padding: 1.2rem;
+            }
+            .two-col {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            font-size: 0.75rem;
+            background: #eef3f1;
+            border-radius: 2rem;
+            padding: 0.2rem 0.8rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="flex-between">
+        <div>
+            <h1>🎙️ 语音工坊 · 双向交互</h1>
+            <div class="sub">文字转语音 | 语音转文字 | 实时识别·自然朗读</div>
+        </div>
+        <div class="badge" id="apiSupportBadge">✅ Web Speech API 就绪</div>
+    </div>
+
+    <div class="two-col">
+        <!-- 左侧：语音转文字板块 -->
+        <div class="card">
+            <div class="card-header">
+                <i>🎤</i> 语音转文字
+                <span style="font-size: 0.7rem; font-weight: normal; margin-left: auto;" class="status-indicator" id="sttStatus">⚪ 待命</span>
+            </div>
+            <div class="recognize-box">
+                <div style="font-weight: 500; margin-bottom: 6px; font-size: 0.8rem; color: #39876b;">📝 识别结果</div>
+                <div class="recognized-text" id="speechToTextResult">点击下方按钮，开始说话……</div>
+            </div>
+            <div class="btn-group">
+                <button id="startRecordBtn">🎙️ 开始识别</button>
+                <button id="copySttBtn" class="btn-outline">📋 复制文本</button>
+                <button id="clearSttBtn" class="btn-outline">🗑️ 清空</button>
+            </div>
+            <div class="btn-group">
+                <button id="sendToTtsBtn" class="btn-outline" style="background:#eef0f0;">🔊 发送到“文字转语音”</button>
+            </div>
+            <div class="compat-warning" id="sttCompatMsg" style="display: none;">
+                ⚠️ 当前浏览器不支持语音识别，请使用 Chrome、Edge、Safari 等现代浏览器。
+            </div>
+            <div style="margin-top: 0.8rem; font-size: 0.7rem; color: #678f82;">
+                💡 提示：点击【开始识别】后授权麦克风，说话结束后自动停止并显示文字。
+            </div>
+        </div>
+
+        <!-- 右侧：文字转语音板块 -->
+        <div class="card">
+            <div class="card-header">
+                <i>🔊</i> 文字转语音
+                <span style="font-size: 0.7rem; font-weight: normal; margin-left: auto;" class="status-indicator" id="ttsStatus">⚪ 就绪</span>
+            </div>
+            <textarea id="ttsTextArea" rows="4" placeholder="输入或粘贴要朗读的文字……&#10;（支持中文、英文混合）">欢迎使用语音助手！这里可以将文字转换为自然语音，也可以使用左侧语音识别后发送过来。</textarea>
+            <div class="voice-controls">
+                <div class="voice-select">
+                    <label style="font-size: 0.75rem;">🎭 语音角色</label>
+                    <select id="voiceSelect"></select>
+                </div>
+                <div class="slider-group">
+                    <span>🐌 语速</span>
+                    <input type="range" id="rateSlider" min="0.5" max="2" step="0.05" value="1.0">
+                    <span id="rateValue" style="min-width: 35px;">1.0</span>
+                </div>
+                <div class="slider-group">
+                    <span>🎵 音调</span>
+                    <input type="range" id="pitchSlider" min="0.5" max="1.8" step="0.05" value="1.0">
+                    <span id="pitchValue" style="min-width: 35px;">1.0</span>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button id="speakBtn">🔊 开始朗读</button>
+                <button id="stopSpeakBtn" class="btn-stop">⏹️ 停止朗读</button>
+                <button id="clearTtsBtn" class="btn-outline">🗑️ 清空文本</button>
+            </div>
+            <div class="compat-warning" id="ttsCompatMsg" style="display: none;">
+                ⚠️ 当前浏览器不支持语音合成，请升级或更换浏览器。
+            </div>
+        </div>
+    </div>
+    <footer>
+        🌟 基于 Web Speech API 构建 | 语音识别需授予麦克风权限 | 支持多种语言及声音 | 隐私本地处理，不上传任何数据
+    </footer>
+</div>
+
+<script>
+    (function(){
+        // ----------------------------- 兼容性检测 -----------------------------
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const speechSynthesisSupported = 'speechSynthesis' in window;
+        const recognitionSupported = SpeechRecognition !== undefined;
+
+        // DOM 元素
+        const sttResultDiv = document.getElementById('speechToTextResult');
+        const startRecordBtn = document.getElementById('startRecordBtn');
+        const copySttBtn = document.getElementById('copySttBtn');
+        const clearSttBtn = document.getElementById('clearSttBtn');
+        const sendToTtsBtn = document.getElementById('sendToTtsBtn');
+        const sttStatusSpan = document.getElementById('sttStatus');
+        const sttCompatMsg = document.getElementById('sttCompatMsg');
+
+        const ttsTextArea = document.getElementById('ttsTextArea');
+        const speakBtn = document.getElementById('speakBtn');
+        const stopSpeakBtn = document.getElementById('stopSpeakBtn');
+        const clearTtsBtn = document.getElementById('clearTtsBtn');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateSlider = document.getElementById('rateSlider');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const rateValue = document.getElementById('rateValue');
+        const pitchValue = document.getElementById('pitchValue');
+        const ttsStatusSpan = document.getElementById('ttsStatus');
+        const ttsCompatMsg = document.getElementById('ttsCompatMsg');
+
+        // 显示兼容性提示
+        if (!recognitionSupported) {
+            sttCompatMsg.style.display = 'block';
+            startRecordBtn.disabled = true;
+            startRecordBtn.style.opacity = '0.6';
+            sttStatusSpan.innerText = '❌ 不支持语音识别';
+        } else {
+            sttCompatMsg.style.display = 'none';
+        }
+        if (!speechSynthesisSupported) {
+            ttsCompatMsg.style.display = 'block';
+            speakBtn.disabled = true;
+            stopSpeakBtn.disabled = true;
+            voiceSelect.disabled = true;
+            rateSlider.disabled = true;
+            pitchSlider.disabled = true;
+            ttsStatusSpan.innerText = '❌ 不支持语音合成';
+        } else {
+            ttsCompatMsg.style.display = 'none';
+            // 动态加载语音列表
+            populateVoiceList();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+        }
+
+        // ----------------------------- 全局变量 (语音识别实例) -----------------------------
+        let recognition = null;
+        let isRecognizing = false;
+
+        // 初始化语音识别对象
+        function initRecognition() {
+            if (!recognitionSupported) return null;
+            const recog = new SpeechRecognition();
+            recog.continuous = false;      // 单次识别，说完自动停止
+            recog.interimResults = false;   // 只返回最终结果，干净
+            recog.lang = 'zh-CN';           // 中文普通话，可识别中英文混输
+            recog.maxAlternatives = 1;
+
+            recog.onstart = function() {
+                isRecognizing = true;
+                sttStatusSpan.innerText = '🎙️ 聆听中... 请说话';
+                startRecordBtn.disabled = true;
+                startRecordBtn.innerHTML = '🎤 识别中...';
+                sttResultDiv.innerText = '🎙️ 正在识别，请清晰发音...';
+                sttResultDiv.style.color = '#2b6e56';
+            };
+
+            recog.onerror = function(event) {
+                console.error('识别错误:', event.error);
+                let errorMsg = '';
+                switch(event.error) {
+                    case 'no-speech': errorMsg = '未检测到语音，请重试。'; break;
+                    case 'audio-capture': errorMsg = '未获取麦克风权限，请允许麦克风访问。'; break;
+                    case 'not-allowed': errorMsg = '麦克风权限被拒绝，请检查设置。'; break;
+                    default: errorMsg = `识别出错: ${event.error}`;
+                }
+                sttResultDiv.innerText = `❌ ${errorMsg}`;
+                sttResultDiv.style.color = '#b1624b';
+                resetRecognitionState();
+            };
+
+            recog.onend = function() {
+                resetRecognitionState();
+                if (sttResultDiv.innerText.includes('正在识别')) {
+                    sttResultDiv.innerText = '未获得有效语音，请重试。';
+                    sttResultDiv.style.color = '#7e8c8c';
+                }
+                sttStatusSpan.innerText = '⚪ 待命';
+            };
+
+            recog.onresult = function(event) {
+                const last = event.results.length - 1;
+                const transcript = event.results[last][0].transcript;
+                if (transcript && transcript.trim() !== '') {
+                    sttResultDiv.innerText = transcript;
+                    sttResultDiv.style.color = '#1f3e44';
+                    sttStatusSpan.innerText = '✅ 识别完成';
+                } else {
+                    sttResultDiv.innerText = '未识别到有效文字，请重试。';
+                    sttResultDiv.style.color = '#b1624b';
+                }
+            };
+            return recog;
+        }
+
+        function resetRecognitionState() {
+            isRecognizing = false;
+            startRecordBtn.disabled = false;
+            startRecordBtn.innerHTML = '🎙️ 开始识别';
+            if (recognition) {
+                // 不清除实例以便下次使用
+            }
+        }
+
+        // 启动识别
+        function startSpeechRecognition() {
+            if (!recognitionSupported) {
+                alert("当前浏览器不支持语音识别功能，请使用Chrome/Edge/Safari。");
+                return;
+            }
+            if (isRecognizing) {
+                // 如果正在识别，先停止再重新开始（避免冲突）
+                if (recognition) recognition.stop();
+                setTimeout(() => {
+                    recognition = initRecognition();
+                    if (recognition) recognition.start();
+                }, 100);
+                return;
+            }
+            // 每次重新实例化保证干净状态
+            recognition = initRecognition();
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.warn(e);
+                    sttResultDiv.innerText = '启动识别失败，请刷新页面重试。';
+                    resetRecognitionState();
+                }
+            }
+        }
+
+        // 复制文本
+        function copySttText() {
+            const text = sttResultDiv.innerText;
+            if (!text || text === '点击下方按钮，开始说话……' || text.includes('未检测到语音') || text.includes('出错')) {
+                alert('没有可复制的有效文本');
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 已复制到剪贴板');
+            }).catch(() => {
+                alert('复制失败，手动选取吧');
+            });
+        }
+
+        function clearSttText() {
+            sttResultDiv.innerText = '点击下方按钮，开始说话……';
+            sttResultDiv.style.color = '#1f3e44';
+            sttStatusSpan.innerText = '⚪ 待命';
+        }
+
+        function sendToTts() {
+            let textToSend = sttResultDiv.innerText;
+            if (!textToSend || textToSend === '点击下方按钮，开始说话……' || textToSend.includes('未检测到语音') || textToSend.includes('出错')) {
+                alert('没有可发送的语音识别文本，请先进行语音识别。');
+                return;
+            }
+            ttsTextArea.value = textToSend;
+            // 滚动到右侧区域并高亮
+            ttsTextArea.focus();
+        }
+
+        // ----------------------------- 文字转语音 核心逻辑 -----------------------------
+        let currentUtterance = null;
+
+        function populateVoiceList() {
+            if (!speechSynthesisSupported) return;
+            const voices = speechSynthesis.getVoices();
+            if (!voices.length) return;
+            // 保存当前选中的值
+            const previousValue = voiceSelect.value;
+            voiceSelect.innerHTML = '';
+            // 优先筛选中文语音（包括 zh-CN, zh-TW, 以及带Chinese 或 识别为中文的）
+            let chineseVoices = voices.filter(voice => 
+                voice.lang.includes('zh') || voice.lang.includes('CN') || voice.name.includes('Chinese') || voice.name.includes('Tingting') || voice.name.includes('Xiaoxiao')
+            );
+            let otherVoices = voices.filter(voice => !chineseVoices.includes(voice));
+            let sortedVoices = [...chineseVoices, ...otherVoices];
+            if (sortedVoices.length === 0) sortedVoices = voices;
+            
+            sortedVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.default && previousValue === '') option.selected = true;
+                voiceSelect.appendChild(option);
+            });
+            // 恢复先前选中（如果有）
+            if (previousValue && Array.from(voiceSelect.options).some(opt => opt.value === previousValue)) {
+                voiceSelect.value = previousValue;
+            } else {
+                // 尝试选中第一个中文语音
+                if (chineseVoices.length > 0) {
+                    const firstChineseName = chineseVoices[0].name;
+                    if (Array.from(voiceSelect.options).some(opt => opt.value === firstChineseName)) {
+                        voiceSelect.value = firstChineseName;
+                    }
+                }
+            }
+        }
+
+        // 获取当前选中的语音对象
+        function getSelectedVoice() {
+            const voices = speechSynthesis.getVoices();
+            const selectedName = voiceSelect.value;
+            return voices.find(voice => voice.name === selectedName) || null;
+        }
+
+        // 朗读文本
+        function speakText() {
+            if (!speechSynthesisSupported) {
+                alert("浏览器不支持语音合成");
+                return;
+            }
+            const text = ttsTextArea.value.trim();
+            if (!text) {
+                alert('请输入要朗读的文字');
+                return;
+            }
+            // 停止当前任何正在播放的语音
+            if (speechSynthesis.speaking || speechSynthesis.pending) {
+                speechSynthesis.cancel();
+            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            const selectedVoice = getSelectedVoice();
+            if (selectedVoice) utterance.voice = selectedVoice;
+            utterance.rate = parseFloat(rateSlider.value);
+            utterance.pitch = parseFloat(pitchSlider.value);
+            utterance.lang = selectedVoice ? selectedVoice.lang : 'zh-CN';
+            
+            utterance.onstart = () => {
+                ttsStatusSpan.innerText = '🔊 朗读中...';
+                speakBtn.disabled = true;
+                stopSpeakBtn.disabled = false;
+            };
+            utterance.onend = () => {
+                ttsStatusSpan.innerText = '✅ 朗读完成';
+                speakBtn.disabled = false;
+                stopSpeakBtn.disabled = true;
+                currentUtterance = null;
+            };
+            utterance.onerror = (err) => {
+                console.error('朗读错误:', err);
+                ttsStatusSpan.innerText = '⚠️ 朗读错误';
+                speakBtn.disabled = false;
+                stopSpeakBtn.disabled = true;
+                currentUtterance = null;
+            };
+            currentUtterance = utterance;
+            speechSynthesis.speak(utterance);
+        }
+
+        function stopSpeaking() {
+            if (speechSynthesisSupported) {
+                speechSynthesis.cancel();
+                if (currentUtterance) {
+                    currentUtterance = null;
+                }
+                ttsStatusSpan.innerText = '⏹️ 已停止';
+                speakBtn.disabled = false;
+                stopSpeakBtn.disabled = true;
+            }
+        }
+
+        function clearTtsText() {
+            ttsTextArea.value = '';
+            ttsTextArea.focus();
+        }
+
+        // 滑块显示值
+        function updateRateDisplay() {
+            rateValue.innerText = rateSlider.value;
+        }
+        function updatePitchDisplay() {
+            pitchValue.innerText = pitchSlider.value;
+        }
+
+        // 防抖刷新语音列表（部分浏览器需重新获取）
+        function refreshVoiceList() {
+            if (speechSynthesisSupported) {
+                populateVoiceList();
+            }
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            if (recognitionSupported) {
+                startRecordBtn.addEventListener('click', startSpeechRecognition);
+            }
+            copySttBtn.addEventListener('click', copySttText);
+            clearSttBtn.addEventListener('click', clearSttText);
+            sendToTtsBtn.addEventListener('click', sendToTts);
+            
+            speakBtn.addEventListener('click', speakText);
+            stopSpeakBtn.addEventListener('click', stopSpeaking);
+            clearTtsBtn.addEventListener('click', clearTtsText);
+            rateSlider.addEventListener('input', () => {
+                updateRateDisplay();
+                if (speechSynthesisSupported && speechSynthesis.speaking) {
+                    // 实时调整需要重新启动不太现实，但保留下次生效
+                }
+            });
+            pitchSlider.addEventListener('input', updatePitchDisplay);
+            voiceSelect.addEventListener('change', () => {});
+            // 如果语音列表动态加载后重新填充
+            if (speechSynthesisSupported && speechSynthesis.onvoiceschanged === undefined) {
+                // 手动检测
+                setInterval(() => {
+                    if (speechSynthesis.getVoices().length > 0 && voiceSelect.options.length === 0) {
+                        populateVoiceList();
+                    }
+                }, 300);
+            }
+        }
+
+        // 初始调用
+        updateRateDisplay();
+        updatePitchDisplay();
+        bindEvents();
+        // 安全禁用停止按钮初始状态
+        if (speechSynthesisSupported) {
+            stopSpeakBtn.disabled = true;
+        } else {
+            speakBtn.disabled = true;
+            stopSpeakBtn.disabled = true;
+        }
+        // 额外确保语音识别不自动启动
+        if (recognitionSupported) {
+            // 预初始化不需要, 但保留
+        }
+        // 针对部分浏览器连续点击识别后无法正常结束的情况做恢复保护
+        window.addEventListener('beforeunload', function() {
+            if (recognition && isRecognizing) {
+                try { recognition.abort(); } catch(e) {}
+            }
+            if (speechSynthesisSupported && speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+        });
+    })();
+</script>
+</body>
+</html>
